@@ -1,0 +1,12 @@
+# Configuracion del dispositivo.
+# Copia este archivo a config.txt y rellena tus valores.
+# Las lineas que empiezan con # se ignoran.
+
+# WiFi (modo estacion)
+SSID=tu_red_wifi
+PASSWORD=tu_password_wifi
+
+# Opcional: protege la web UI con password (HTTP Basic Auth).
+# Si se deja vacio o se omite, la UI queda sin proteccion.
+# Recomendado en redes compartidas.
+WEB_PASSWORD=
