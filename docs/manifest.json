@@ -4,7 +4,7 @@
   "home_assistant_domain": "matrixled",
   "builds": [
     {
-      "chipFamily": "ESP32",
+      "chipFamily": "ESP32-C6",
       "parts": [
         {
           "offset": 0,
