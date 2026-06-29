@@ -10,3 +10,9 @@ PASSWORD=tu_password_wifi
 # Si se deja vacio o se omite, la UI queda sin proteccion.
 # Recomendado en redes compartidas.
 WEB_PASSWORD=
+
+# Opcional: alertas de Telegram cuando salte DEFCON (detector de ataques).
+# Crea un bot con @BotFather -> copia el token.
+# Consigue tu chat_id (mensaje a tu bot, luego consulta getUpdates).
+TELEGRAM_TOKEN=
+TELEGRAM_CHAT_ID=

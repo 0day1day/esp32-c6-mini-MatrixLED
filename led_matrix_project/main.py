@@ -158,6 +158,12 @@ if setup_mode:
     effect_name = 'setup'
 
 server = WebServer(password=config.get('WEB_PASSWORD', None) or None)
+TELEGRAM_TOKEN = config.get('TELEGRAM_TOKEN', '')
+TELEGRAM_CHAT_ID = config.get('TELEGRAM_CHAT_ID', '')
+_last_alert_defcon = 5
+_last_alert_t = 0
+_alert_cooldown_ms = 60000
+_scan_counter = 0
 
 
 @server.route('/')
@@ -633,6 +639,44 @@ def _log(msg):
         pass
 
 
+def _build_alert_msg(lvl, ti):
+    """Format a Telegram alert message from threat info."""
+    lines = []
+    lines.append('\xF0\x9F\x9A\xA8 MATRIX LED - IDIOT Monitor')
+    lines.append('DEFCON %d' % lvl)
+    atype = ti.get('attack_type', '')
+    sub = ti.get('attack_subtype', '')
+    if atype:
+        lines.append('Type: %s%s' % (atype, (' / ' + sub) if sub else ''))
+    if ti.get('target_ssid'):
+        lines.append('Target AP: %s (%s)' % (ti['target_ssid'], ti.get('target_bssid', '?')))
+    elif ti.get('target_bssid'):
+        lines.append('Target AP BSSID: %s' % ti['target_bssid'])
+    if ti.get('last_src'):
+        ss = ti.get('last_src_ssid')
+        lines.append('Source (spoofed%s): %s' % ((' -> ' + ss) if ss else '?', ti['last_src']))
+    if ti.get('victim'):
+        vs = ti.get('victim_ssid')
+        lines.append('Victim: %s%s' % (ti['victim'], (' -> ' + vs) if vs else ''))
+    if ti.get('total_deauths') is not None:
+        lines.append('Frames: %d / 60s' % ti['total_deauths'])
+    return '\n'.join(lines)
+
+
+def _send_telegram_alert(lvl):
+    global _last_alert_defcon, _last_alert_t
+    if not TELEGRAM_TOKEN:
+        return
+    try:
+        import telegram
+        ti = _wifi_mon.threat_info() if _wifi_mon else {}
+        msg = _build_alert_msg(lvl, ti)
+        ok = telegram.send_alert(TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, msg)
+        _log('Telegram alert DEFCON %d sent=%s' % (lvl, ok))
+    except Exception as e:
+        _log('Telegram alert error: %s' % e)
+
+
 @server.route('/health')
 def health(params):
     """Diagnostic endpoint: free memory, effect, uptime, DEFCON."""
@@ -654,10 +698,12 @@ def health(params):
 
 @server.route('/threats')
 def threats(params):
-    """Wi-Fi attack details: DEFCON, mode and attacker MAC metadata."""
+    """Wi-Fi attack details: DEFCON, mode, attacker MAC metadata, SSIDs."""
     try:
         if _wifi_mon:
-            return json.dumps(_wifi_mon.threat_info())
+            info = _wifi_mon.threat_info()
+            info['telegram_enabled'] = bool(TELEGRAM_TOKEN and TELEGRAM_CHAT_ID)
+            return json.dumps(info)
         return '{"defcon":5,"mode":"none"}'
     except Exception as e:
         return '{"error":"%s"}' % str(e)
@@ -685,6 +731,25 @@ while True:
                     else:
                         current_effect = _prev_effect if _prev_effect else MatrixRain(display)
                         _prev_effect = None
+                # Telegram alert on DEFCON escalation (to attack levels)
+                if _wifi_mon.mode == 'frames':
+                    now_ms = time.ticks_ms()
+                    if lvl <= 2 and (lvl < _last_alert_defcon or
+                                     (lvl != _last_alert_defcon and
+                                      time.ticks_diff(now_ms, _last_alert_t) > _alert_cooldown_ms)):
+                        _last_alert_defcon = lvl
+                        _last_alert_t = now_ms
+                        _send_telegram_alert(lvl)
+                    elif lvl >= 4:
+                        _last_alert_defcon = lvl
+                    # Periodic SSID enrichment while under attack (~12s)
+                    if _wifi_mon.under_attack:
+                        _scan_counter += 1
+                        if _scan_counter > 150:
+                            _scan_counter = 0
+                            _wifi_mon.rescan_ssids(_wlan_sta)
+                    else:
+                        _scan_counter = 0
             try:
                 current_effect.update()
                 current_effect.render()

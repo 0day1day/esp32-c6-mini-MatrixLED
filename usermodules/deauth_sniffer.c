@@ -17,6 +17,7 @@
 
 static volatile uint32_t _deauth_count = 0;
 static volatile uint8_t _started = 0;
+static volatile uint8_t _last_type = 0; /* 0xC0 deauth, 0xA0 disassoc */
 
 /* Last seen frame addresses (6 bytes each). */
 static volatile uint8_t _last_dst[6];   /* Address 1 - victim client (or broadcast) */
@@ -52,6 +53,7 @@ static void _sniffer_cb(void *buf, wifi_promiscuous_pkt_type_t type) {
         return;
     }
     _deauth_count++;
+    _last_type = fc;
 
     /* Capture the three addresses. */
     for (int i = 0; i < 6; i++) {
@@ -110,6 +112,12 @@ static mp_obj_t mod_available(void) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(mod_available_obj, mod_available);
 
+/* Return the raw type byte of the last deauth/disassoc (0xC0 or 0xA0). */
+static mp_obj_t mod_last_type(void) {
+    return mp_obj_new_int((int)_last_type);
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(mod_last_type_obj, mod_last_type);
+
 /* Return the most recent deauth source MAC (6 bytes) or empty bytes. */
 static mp_obj_t mod_last_src(void) {
     if (!_have_last) {
@@ -166,6 +174,7 @@ static const mp_rom_map_elem_t _module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&mod_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&mod_stop_obj) },
     { MP_ROM_QSTR(MP_QSTR_available), MP_ROM_PTR(&mod_available_obj) },
+    { MP_ROM_QSTR(MP_QSTR_last_type), MP_ROM_PTR(&mod_last_type_obj) },
     { MP_ROM_QSTR(MP_QSTR_last_src), MP_ROM_PTR(&mod_last_src_obj) },
     { MP_ROM_QSTR(MP_QSTR_last_bssid), MP_ROM_PTR(&mod_last_bssid_obj) },
     { MP_ROM_QSTR(MP_QSTR_last_dst), MP_ROM_PTR(&mod_last_dst_obj) },
