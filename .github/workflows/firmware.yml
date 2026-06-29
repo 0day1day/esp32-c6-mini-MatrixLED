@@ -55,7 +55,7 @@ jobs:
             set -e
             git clone --depth 1 --branch v1.27.0 https://github.com/micropython/micropython /mp
             cd /mp
-            git submodule update --init lib/micropython-lib
+            git submodule update --init lib/mynewt-nimble lib/berkeley-db-1.xx lib/axtls lib/lwip lib/mbedtls lib/btstack
             make -C mpy-cross -j"$(nproc)"
             cd ports/esp32
             make BOARD=ESP32_GENERIC_C6 submodules
