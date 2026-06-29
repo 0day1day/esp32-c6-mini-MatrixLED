@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Matrix LED · Flasher</title>
+<style>
+:root{--bg:#07080a;--surface:#101216;--border:#1f242c;--text:#e6e8ec;--dim:#9098a4;--faint:#5b636f;--accent:#22c55e;--danger:#ef4444}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:ui-sans-serif,system-ui,-apple-system,sans-serif;background:radial-gradient(1200px 600px at 70% -10%,rgba(34,197,94,.06),transparent 60%),var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;-webkit-font-smoothing:antialiased}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;max-width:520px;width:100%;box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 20px 60px -20px rgba(0,0,0,.7)}
+.logo{width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#16a34a);display:grid;place-items:center;margin:0 auto 18px;box-shadow:0 0 30px rgba(34,197,94,.25)}
+.logo svg{width:30px;height:30px}
+h1{font-size:22px;text-align:center;letter-spacing:-.02em;margin-bottom:4px}
+.sub{font-size:13px;color:var(--dim);text-align:center;margin-bottom:28px;font-family:ui-monospace,monospace}
+.steps{list-style:none;margin:24px 0}
+.steps li{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--dim)}
+.steps li:last-child{border-bottom:none}
+.steps .n{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:grid;place-items:center;font-size:11px;color:var(--accent);font-family:ui-monospace,monospace}
+.cta{text-align:center;margin:28px 0 8px}
+esp-web-install-button{--esp-tools-button-text-color:#04210f;--esp-tools-button-background-color:var(--accent)}
+.btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),#16a34a);color:#04210f;border:none;border-radius:10px;padding:14px 28px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+.note{font-size:11px;color:var(--faint);text-align:center;margin-top:18px;line-height:1.6;font-family:ui-monospace,monospace}
+.note a{color:var(--accent);text-decoration:none}
+.warn{font-size:11px;color:var(--danger);text-align:center;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="logo">
+<svg viewBox="0 0 16 16" fill="#04210f"><rect x="2" y="2" width="3" height="3"/><rect x="6" y="2" width="3" height="3" opacity=".6"/><rect x="10" y="2" width="3" height="3"/><rect x="2" y="6" width="3" height="3" opacity=".6"/><rect x="6" y="6" width="3" height="3"/><rect x="10" y="6" width="3" height="3" opacity=".6"/><rect x="2" y="10" width="3" height="3"/><rect x="6" y="10" width="3" height="3" opacity=".6"/><rect x="10" y="10" width="3" height="3"/></svg>
+</div>
+<h1>Matrix LED</h1>
+<div class="sub">ESP32-C6 &middot; one-click installer</div>
+
+<ol class="steps">
+<li><span class="n">1</span><span>Connect your ESP32-C6 via USB to this computer (Chrome or Edge).</span></li>
+<li><span class="n">2</span><span>Click <b>Install</b> below and select the serial port.</span></li>
+<li><span class="n">3</span><span>Wait for the flash to complete, then the device reboots.</span></li>
+<li><span class="n">4</span><span>Join the <b>MatrixLED-Setup</b> Wi-Fi and open <b>192.168.4.1</b> to configure your network.</span></li>
+</ol>
+
+<div class="cta">
+<script type="module" src="https://unpkg.com/esp-web-tools@9.4.3/dist/web/install-button.js?module"></script>
+<esp-web-install-button manifest="manifest.json"></esp-web-install-button>
+</div>
+
+<div class="warn" id="compat"></div>
+
+<div class="note">
+Firmware served from <a href="https://github.com/0day1day/esp32-c6-mini-MatrixLED/releases/latest">latest release</a>.<br>
+Requires a Chromium browser (Chrome/Edge) with WebSerial.<br>
+Source: <a href="https://github.com/0day1day/esp32-c6-mini-MatrixLED">github.com/0day1day/esp32-c6-mini-MatrixLED</a>
+</div>
+</div>
+
+<script>
+if(!navigator.serial){document.getElementById('compat').textContent='⚠ This browser does not support WebSerial. Use Chrome or Edge on desktop.'}
+</script>
+</body>
+</html>

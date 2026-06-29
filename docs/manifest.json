@@ -1,0 +1,16 @@
+{
+  "name": "ESP32-C6 Matrix LED",
+  "version": "3.0",
+  "home_assistant_domain": "matrixled",
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        {
+          "offset": 0,
+          "path": "https://github.com/0day1day/esp32-c6-mini-MatrixLED/releases/latest/download/firmware.bin"
+        }
+      ]
+    }
+  ]
+}

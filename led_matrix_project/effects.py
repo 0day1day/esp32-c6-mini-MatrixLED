@@ -1111,3 +1111,48 @@ class SpriteAnimation(Effect):
             best_move = random.choice(safe_moves)
 
         self.snake_dir = best_move
+
+
+class DefconEffect(Effect):
+    """WiFi attack alert. Blinks 'DC<level>'; at DEFCON 1 flashes a warning fill."""
+    def __init__(self, display, font, level=2):
+        super().__init__(display)
+        self.font = font
+        self.level = max(1, min(5, level))
+        self.blink = 0
+
+    def set_level(self, level):
+        self.level = max(1, min(5, level))
+
+    def update(self):
+        # Runs every frame regardless of speed (alert must be responsive)
+        self.display.clear()
+        self.blink += 1
+        period = max(3, self.level * 3)  # lower level = faster blink
+        on_phase = (self.blink // period) % 2 == 0
+        if on_phase:
+            self._draw_label()
+        elif self.level <= 1:
+            self._draw_warning()
+
+    def _draw_label(self):
+        s = 'DC%d' % self.level
+        char_width = 5
+        total = len(s) * char_width + (len(s) - 1)
+        x = max(0, (self.display.WIDTH - total) // 2)
+        for ch in s:
+            if ch in self.font:
+                for col_byte in self.font[ch]:
+                    for y in range(8):
+                        if col_byte & (1 << y):
+                            self.display.set_pixel(x, y)
+                    x += 1
+            x += 1
+
+    def _draw_warning(self):
+        # Full-screen hatched warning fill
+        for y in range(self.display.HEIGHT):
+            for x in range(self.display.WIDTH):
+                if (x + y) % 2 == 0:
+                    self.display.set_pixel(x, y)
+

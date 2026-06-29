@@ -3,6 +3,11 @@ import gc
 import os
 import time
 
+try:
+    from embedded_assets import CSS as EMBEDDED_CSS
+except Exception:
+    EMBEDDED_CSS = ''
+
 MAX_REQUEST_SIZE = 600 * 1024  # Hard limit: uploads up to 500KB + overhead
 RECV_CHUNK = 1024
 
@@ -187,7 +192,12 @@ class WebServer:
                 self._send(conn, 200, ctype, f.read(),
                            extra='Cache-Control: public, max-age=3600\r\n')
         except OSError:
-            self._send(conn, 404, 'text/plain', 'Not Found')
+            # Frozen-firmware fallback: serve embedded CSS when no static file
+            if fname == 'style.css' and EMBEDDED_CSS:
+                self._send(conn, 200, ctype, EMBEDDED_CSS,
+                           extra='Cache-Control: public, max-age=3600\r\n')
+            else:
+                self._send(conn, 404, 'text/plain', 'Not Found')
 
     # ---- Main request loop ----
 
@@ -417,6 +427,57 @@ class WebServer:
 def _fx_button(name, label, icon):
     return '<button class="fx" data-name="%s" onclick="setEffect(\'%s\')" title="%s">%s<span>%s</span></button>' % (
         name, name, label, icon, label)
+
+
+def create_config_html():
+    """First-boot WiFi setup page (served in AP setup mode)."""
+    return '''<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Matrix LED · Setup</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+.setup{max-width:420px;margin:0 auto;padding:20px}
+.setup h1{font-size:20px;margin-bottom:4px;text-align:center}
+.setup .sub{text-align:center;color:var(--text-dim);font-size:12px;margin-bottom:22px;font-family:var(--mono)}
+.setup label{font-size:11px;color:var(--text-dim);display:block;margin:14px 0 6px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+.setup .row{display:flex;gap:8px}
+.setup .row .input{flex:1}
+.setup .scan-btn{flex-shrink:0;width:auto;padding:0 12px}
+.field-note{font-size:10px;color:var(--text-faint);margin-top:4px;font-family:var(--mono)}
+.setup .btn{width:100%;margin-top:22px;height:42px;font-size:14px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border-hi);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style></head><body>
+<div class="setup">
+<div style="text-align:center;margin-bottom:6px"><span class="logo">__LOGO__</span></div>
+<h1>Matrix LED</h1>
+<div class="sub">First-time setup &middot; connect me to WiFi</div>
+
+<label>WiFi network</label>
+<div class="row">
+<select id="ssid" class="input"><option value="">-- Select network --</option></select>
+<button class="btn scan-btn" onclick="doScan()"><span id="scanLbl">Scan</span></button>
+</div>
+<input type="text" id="ssidManual" class="input" style="margin-top:8px;display:none" placeholder="...or type SSID manually">
+
+<label>WiFi password</label>
+<input type="password" id="pwd" class="input" placeholder="Password">
+<div class="field-note" id="pwdNote"></div>
+
+<label>UI password <span style="text-transform:none;color:var(--text-faint)">(optional, protects the dashboard)</span></label>
+<input type="text" id="webpwd" class="input" placeholder="Leave empty for open access">
+
+<button class="btn btn-primary" onclick="save()">Save &amp; reboot</button>
+<div class="sub" style="margin-top:18px">The device will reboot and join your network.</div>
+</div>
+<script>
+function doScan(){var l=document.getElementById('scanLbl');l.innerHTML='<span class="spin"></span>Scanning';fetch('/scan').then(function(r){return r.json()}).then(function(n){var s=document.getElementById('ssid');s.innerHTML='<option value="">-- Select network --</option>';n.sort(function(a,b){return b.rssi-a.rssi});n.forEach(function(x){var o=document.createElement('option');o.value=x.ssid;o.textContent=x.ssid+(x.secure?' \u25CF':'')+' ('+x.rssi+'dBm)';s.appendChild(o)});l.textContent='Rescan'}).catch(function(){l.textContent='Scan';alert('Scan failed - type SSID manually')})}
+function save(){var sel=document.getElementById('ssid').value;var man=document.getElementById('ssidManual');var ssid=man.style.display!=='none'?man.value:sel;var pwd=document.getElementById('pwd').value;var wp=document.getElementById('webpwd').value;if(!ssid){alert('Pick or type a network');return}var u='/save_config?ssid='+encodeURIComponent(ssid)+'&password='+encodeURIComponent(pwd);if(wp)u+='&web_password='+encodeURIComponent(wp);fetch(u,{method:'POST'}).then(function(){document.body.innerHTML='<div style="text-align:center;padding:60px;color:#9098a4;font-family:monospace"><h2>Rebooting...</h2><p>Joining '+ssid+'</p></div>'}).catch(function(){alert('Save failed')})}
+document.getElementById('ssid').addEventListener('change',function(){document.getElementById('pwdNote').textContent=this.value?'':'If unsure, leave blank for open networks';var m=document.getElementById('ssidManual');if(!this.value)m.style.display='block';else m.style.display='none'});
+doScan();
+</script>
+</body></html>'''.replace('__LOGO__', ICONS['logo'])
 
 
 def create_html(effect_name, animations, files, tz_value=0, manual_dt=None,
