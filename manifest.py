@@ -15,6 +15,7 @@ freeze("led_matrix_project", (
     "effects.py",
     "max7219.py",
     "sensor_aht20_bmp280.py",
+    "wifimon.py",
 ))
 
 # Embedded resources (CSS) generated at build time
