@@ -5,7 +5,7 @@
 # Note: the CI generates led_matrix_project/embedded_assets.py (with the CSS)
 # before running the build, so the firmware is self-contained.
 
-include("$(PORT_DIR)/boards/ESP32_GENERIC_C6/manifest.py")
+include("$(PORT_DIR)/boards/manifest.py")
 
 # Core modules (frozen as top-level modules)
 freeze("led_matrix_project", (

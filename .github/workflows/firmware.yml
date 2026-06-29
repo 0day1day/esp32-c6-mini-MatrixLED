@@ -30,6 +30,8 @@ jobs:
   firmware:
     name: Build ESP32-C6 firmware
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     # Only build firmware on version tags (and manual dispatch)
     if: startsWith(github.ref, 'refs/tags/')
     steps:
