@@ -32,6 +32,8 @@ class WifiMonitor:
         self.defcon = 5
         self.mode = 'connection'
         self._last_total = 0
+        self._ssid_cache = {}          # bssid str -> ssid str (resolved via scan)
+        self._last_scan = 0
         self._start_c_sniffer()
 
     def _is_connected(self):
@@ -117,9 +119,45 @@ class WifiMonitor:
     def under_attack(self):
         return self.defcon <= 2
 
+    def resolve_bssid(self, mac):
+        """Return cached SSID for a BSSID/MAC string, or None."""
+        return self._ssid_cache.get(mac)
+
+    def rescan_ssids(self, wlan):
+        """Pause the sniffer, perform a Wi-Fi scan and cache BSSID->SSID
+        for every nearby AP. Best-effort: failures are ignored."""
+        if self.mode != 'frames' or wlan is None:
+            return
+        paused = False
+        try:
+            deauth_sniffer.stop()
+            paused = True
+        except Exception:
+            pass
+        try:
+            nets = wlan.scan()
+            for entry in nets:
+                try:
+                    ssid = entry[0]
+                    bssid = entry[1]
+                    s = ssid.decode('utf-8', 'ignore') if isinstance(ssid, (bytes, bytearray)) else ssid
+                    m = _format_mac(bssid)
+                    if m not in self._ssid_cache and s:
+                        self._ssid_cache[m] = s
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        finally:
+            if paused:
+                try:
+                    deauth_sniffer.start()
+                except Exception:
+                    pass
+
     def threat_info(self):
-        """Return a dict with DEFCON level, mode and attacker MAC details
-        (only meaningful in frames mode)."""
+        """Return a dict with DEFCON level, mode, attacker MAC details,
+        attack type/subtype and resolved SSID names."""
         info = {'defcon': self.defcon, 'mode': self.mode,
                 'under_attack': self.under_attack}
         if self.mode == 'frames' and _C_AVAILABLE:
@@ -128,12 +166,25 @@ class WifiMonitor:
                 src = deauth_sniffer.last_src()
                 bssid = deauth_sniffer.last_bssid()
                 dst = deauth_sniffer.last_dst()
-                if src and len(src) == 6:
-                    info['last_src'] = _format_mac(src)
-                if bssid and len(bssid) == 6:
-                    info['target_bssid'] = _format_mac(bssid)
-                if dst and len(dst) == 6:
-                    info['victim'] = _format_mac(dst)
+                tbyte = deauth_sniffer.last_type()
+                src_m = _format_mac(src) if src and len(src) == 6 else ''
+                bssid_m = _format_mac(bssid) if bssid and len(bssid) == 6 else ''
+                dst_m = _format_mac(dst) if dst and len(dst) == 6 else ''
+                if src_m:
+                    info['last_src'] = src_m
+                    info['last_src_ssid'] = self.resolve_bssid(src_m)
+                if bssid_m:
+                    info['target_bssid'] = bssid_m
+                    info['target_ssid'] = self.resolve_bssid(bssid_m)
+                if dst_m:
+                    info['victim'] = dst_m
+                    info['victim_ssid'] = self.resolve_bssid(dst_m)
+                # Attack type + subtype classification
+                info['attack_type'] = 'Disassociation' if tbyte == 0xA0 else 'Deauth'
+                if dst_m.upper() == 'FF:FF:FF:FF:FF:FF':
+                    info['attack_subtype'] = 'Broadcast (kick all clients)'
+                else:
+                    info['attack_subtype'] = 'Targeted (single client)'
                 raw = deauth_sniffer.recent_sources()
                 seen = set()
                 macs = []
@@ -146,6 +197,7 @@ class WifiMonitor:
                             macs.append(m)
                 if macs:
                     info['recent_sources'] = macs
+                    info['recent_sources_ssids'] = [self.resolve_bssid(m) for m in macs]
             except Exception:
                 pass
         return info

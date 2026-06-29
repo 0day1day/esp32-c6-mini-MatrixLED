@@ -16,6 +16,7 @@ freeze("led_matrix_project", (
     "max7219.py",
     "sensor_aht20_bmp280.py",
     "wifimon.py",
+    "telegram.py",
 ))
 
 # Embedded resources (CSS) generated at build time
