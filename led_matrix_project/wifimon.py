@@ -116,3 +116,40 @@ class WifiMonitor:
     @property
     def under_attack(self):
         return self.defcon <= 2
+
+    def threat_info(self):
+        """Return a dict with DEFCON level, mode and attacker MAC details
+        (only meaningful in frames mode)."""
+        info = {'defcon': self.defcon, 'mode': self.mode,
+                'under_attack': self.under_attack}
+        if self.mode == 'frames' and _C_AVAILABLE:
+            try:
+                info['total_deauths'] = deauth_sniffer.count()
+                src = deauth_sniffer.last_src()
+                bssid = deauth_sniffer.last_bssid()
+                dst = deauth_sniffer.last_dst()
+                if src and len(src) == 6:
+                    info['last_src'] = _format_mac(src)
+                if bssid and len(bssid) == 6:
+                    info['target_bssid'] = _format_mac(bssid)
+                if dst and len(dst) == 6:
+                    info['victim'] = _format_mac(dst)
+                raw = deauth_sniffer.recent_sources()
+                seen = set()
+                macs = []
+                for i in range(0, len(raw), 6):
+                    chunk = raw[i:i + 6]
+                    if len(chunk) == 6 and any(chunk):
+                        m = _format_mac(chunk)
+                        if m not in seen:
+                            seen.add(m)
+                            macs.append(m)
+                if macs:
+                    info['recent_sources'] = macs
+            except Exception:
+                pass
+        return info
+
+
+def _format_mac(b):
+    return ':'.join('%02X' % c for c in b)

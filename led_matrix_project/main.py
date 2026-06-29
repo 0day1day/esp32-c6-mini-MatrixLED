@@ -652,6 +652,17 @@ def health(params):
         return '{"error":"%s"}' % str(e)
 
 
+@server.route('/threats')
+def threats(params):
+    """Wi-Fi attack details: DEFCON, mode and attacker MAC metadata."""
+    try:
+        if _wifi_mon:
+            return json.dumps(_wifi_mon.threat_info())
+        return '{"defcon":5,"mode":"none"}'
+    except Exception as e:
+        return '{"error":"%s"}' % str(e)
+
+
 loop_count = 0
 last_update = time.ticks_ms()
 while True:

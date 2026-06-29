@@ -136,3 +136,18 @@ input[type=file]::file-selector-button{background:var(--surface-3);border:1px so
 
 .footer{text-align:center;padding:22px 0 6px;font-size:10px;color:var(--text-faint);font-family:var(--mono);letter-spacing:.05em}
 .footer span{color:var(--text-dim)}
+
+/* ---------- DEFCON threat panel ---------- */
+.threat{grid-column:span 12}
+.threat-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.defcon-badge{font-family:var(--mono);font-weight:700;font-size:13px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-dim);min-width:72px;text-align:center;transition:all var(--tx)}
+.defcon-badge.lv5{color:#3a9b5a;background:rgba(58,155,90,.08);border-color:rgba(58,155,90,.3)}
+.defcon-badge.lv3,.defcon-badge.lv4{color:var(--warn);background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3)}
+.defcon-badge.lv1,.defcon-badge.lv2{color:var(--danger);background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.4);animation:flash 1s infinite}
+@keyframes flash{50%{opacity:.55}}
+.threat-modes{font-size:10px;color:var(--text-faint);font-family:var(--mono);margin-left:auto;text-transform:uppercase;letter-spacing:.04em}
+.mac-row{display:flex;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+.mac-row:last-child{border-bottom:none}
+.mac-label{color:var(--text-faint);font-family:var(--mono);font-size:10px;min-width:120px;text-transform:uppercase;letter-spacing:.03em}
+.mac-val{font-family:var(--mono);color:var(--text);font-weight:600;word-break:break-all}
+.mac-note{color:var(--text-faint);font-size:10px;font-style:italic}

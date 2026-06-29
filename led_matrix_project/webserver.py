@@ -50,6 +50,7 @@ ICONS = {
     'gauge': '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 11 A5 5 0 0 1 13 11"/><line x1="8" y1="11" x2="10.5" y2="7.5"/></svg>',
     'flip': '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 5 L3 11 M5 3 L11 3 M5 13 L11 13 M13 5 L13 11"/><line x1="8" y1="2" x2="8" y2="14" stroke-dasharray="2 2"/></svg>',
     'sun': '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 2 L8 3.5 M8 12.5 L8 14 M2 8 L3.5 8 M12.5 8 L14 8 M3.8 3.8 L4.8 4.8 M11.2 11.2 L12.2 12.2 M3.8 12.2 L4.8 11.2 M11.2 4.8 L12.2 3.8"/></svg>',
+    'shield': '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 1 L14 3 L14 8 Q14 13 8 15 Q2 13 2 8 L2 3 Z"/><path d="M5.5 8 L7 9.5 L10.5 6"/></svg>',
 }
 
 _CONTENT_TYPES = {
@@ -568,7 +569,15 @@ def create_html(effect_name, animations, files, tz_value=0, manual_dt=None,
              '<div class="reading">%s<div class="num" id="rackTemp">--</div><div class="unit">&#176;C temp</div></div>'
              '<div class="reading">%s<div class="num" id="rackHum">--</div><div class="unit">%% rh</div></div>'
              '<div class="reading">%s<div class="num" id="rackPress">--</div><div class="unit">hPa</div></div>'
-             '</div></section>' % (ic['rack'], ic['temp'], ic['humidity'], ic['pressure']))
+              '</div></section>' % (ic['rack'], ic['temp'], ic['humidity'], ic['pressure']))
+
+    # DEFCON threat panel
+    P.append('<section class="card threat">'
+             '<div class="card-head">%s Threat Monitor <span class="threat-modes" id="threatMode">--</span></div>'
+             '<div class="threat-head"><span class="defcon-badge lv5" id="defconBadge">DC 5</span>'
+             '<span style="font-size:11px;color:var(--text-dim)" id="defconLabel">All clear</span></div>'
+             '<div id="threatDetails"><div class="mac-note">Monitoring Wi-Fi for deauth attacks...</div></div>'
+             '</section>' % ic['shield'])
 
     # Timezone / time
     P.append('<section class="card span6">'
@@ -663,8 +672,9 @@ function set(id,v){var e=document.getElementById(id);if(e)e.textContent=v}
 function updateHealth(){fetch('/health').then(function(r){return r.json()}).then(function(h){var m=Math.round(h.free_mem/1024);var up=h.uptime_s;var mm=Math.floor(up/60),ss=up%60;set('memPill',m+'KB');set('upPill',mm+'m'+(ss<10?'0':'')+ss+'s')}).catch(function(){})}
 document.getElementById('otaForm').onsubmit=function(e){var f=document.getElementById('pyFile').files[0];if(f&&!f.name.endsWith('.py')){alert('Select a .py file');e.preventDefault();return false}if(f&&f.size>512000){alert('File too large (max 500KB)');e.preventDefault();return false}if(f){var crit=['webserver.py','main.py'];if(crit.indexOf(f.name)>=0){if(!confirm('WARNING: '+f.name+' is critical! A bad upload bricks remote access. A backup is made. Continue?')){e.preventDefault();return false}}else if(!confirm('Upload '+f.name+'? A backup is created automatically.')){e.preventDefault();return false}}}
 function restartDevice(){if(confirm('Restart ESP32? Reboots in ~10s.')){post('/ota/restart').then(function(){document.body.innerHTML='<div style="text-align:center;padding:80px;color:#9098a4;font-family:monospace"><h2>Rebooting...</h2></div>';setTimeout(function(){location.reload()},10000)})}}
-setInterval(updatePreview,600);setInterval(updateRack,5000);setInterval(updateHealth,4000);
-updateRack();updateHealth();
+function updateThreats(){fetch('/threats').then(function(r){return r.json()}).then(function(t){var b=document.getElementById('defconBadge');var l=document.getElementById('defconLabel');var m=document.getElementById('threatMode');var d=document.getElementById('threatDetails');if(!b)return;var lv=t.defcon||5;b.className='defcon-badge lv'+lv;b.textContent='DC '+lv;var labels=['','CRITICAL - under attack','HIGH - attack suspected','ELEVATED','GUARDED','All clear'];l.textContent=labels[lv]||'Unknown';m.textContent=t.mode||'none';if(t.mode!=='frames'){d.innerHTML='<div class="mac-note">Frame-level detection needs compiled firmware. Using connection monitor.</div>';return}var html='';if(t.target_bssid)html+='<div class="mac-row"><span class="mac-label">Target AP BSSID</span><span class="mac-val">'+t.target_bssid+'</span></div>';if(t.last_src)html+='<div class="mac-row"><span class="mac-label">Source (spoofed?)</span><span class="mac-val">'+t.last_src+'</span></div>';if(t.victim)html+='<div class="mac-row"><span class="mac-label">Victim</span><span class="mac-val">'+t.victim+'</span></div>';if(t.recent_sources&&t.recent_sources.length)html+='<div class="mac-row"><span class="mac-label">MACs seen ('+t.total_deauths+' frames)</span><span class="mac-val">'+t.recent_sources.join(' ')+'</span></div>';if(!html)html=t.under_attack?'<div class="mac-note">Attack in progress, capturing...</div>':'<div class="mac-note">No deauth frames detected.</div>';else if(t.under_attack)html+='<div class="mac-note">Source is usually the spoofed AP BSSID, not the real attacker.</div>';d.innerHTML=html}).catch(function(){})}
+setInterval(updatePreview,600);setInterval(updateRack,5000);setInterval(updateHealth,4000);setInterval(updateThreats,3000);
+updateRack();updateHealth();updateThreats();
 setTimeout(function(){var t=document.getElementById('toast');if(t)t.remove()},3500);
 (function(){var b=(document.querySelector('.badge')||{}).textContent||'';b=b.toLowerCase();var map={matrix:'matrix',life:'game of life',clock:'clock',fire:'fire',wave:'wave',spectrum:'spectrum',stars:'stars',binary:'binary clock',plasma:'plasma',equalizer:'equalizer',maze:'maze runner','marquee':'marquee','news':'news'};var keys=Object.keys(map);[].forEach.call(document.querySelectorAll('.fx'),function(el){var m=map[el.dataset.name];if(m&&b.indexOf(m)===0)el.classList.add('on')})})();
 </script>''')
