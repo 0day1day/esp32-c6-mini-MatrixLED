@@ -1,0 +1,12 @@
+{
+    "deploy_options": {
+        "flash_offset": "0"
+    },
+    "features": [
+        "WiFi"
+    ],
+    "mcu": "esp32c6",
+    "product": "Matrix LED C6",
+    "url": "https://github.com/0day1day/esp32-c6-mini-MatrixLED",
+    "vendor": "Matrix LED"
+}

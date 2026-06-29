@@ -57,13 +57,15 @@ jobs:
             cd /mp
             git submodule update --init lib/mynewt-nimble lib/berkeley-db-1.xx lib/axtls lib/lwip lib/mbedtls lib/btstack
             make -C mpy-cross -j"$(nproc)"
+            # Install our custom board (GENERIC_C6 minus Bluetooth/NimBLE)
+            cp -r /work/boards/MATRIXLED_C6 ports/esp32/boards/
             cd ports/esp32
-            make BOARD=ESP32_GENERIC_C6 submodules
-            make BOARD=ESP32_GENERIC_C6 \
+            make BOARD=MATRIXLED_C6 submodules
+            make BOARD=MATRIXLED_C6 \
                  FROZEN_MANIFEST=/work/manifest.py \
                  USER_C_MODULES=/work/usermodules/micropython.cmake \
                  -j"$(nproc)"
-            cp -v build-ESP32_GENERIC_C6/firmware.bin /work/firmware.bin
+            cp -v build-MATRIXLED_C6/firmware.bin /work/firmware.bin
           '
 
       - name: Upload artifact

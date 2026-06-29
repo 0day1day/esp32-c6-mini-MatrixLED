@@ -1,0 +1,13 @@
+# Matrix LED C6 board: explicit Bluetooth / NimBLE disable.
+# sdkconfig.ble is intentionally NOT included in mpconfigboard.cmake; this
+# fragment reinforces the BT=n defaults for safety.
+CONFIG_BT=n
+CONFIG_BT_NIMBLE=n
+CONFIG_BT_BLE_ENABLED=n
+CONFIG_BT_NIMBLE_ENABLED=n
+CONFIG_BT_CONTROLLER_ENABLED=n
+
+# MicroPython-level: no bluetooth module.
+CONFIG_MICROPY_PY_BLUETOOTH=n
+CONFIG_MICROPY_PY_BLUETOOTH_NIMBLE=n
+
